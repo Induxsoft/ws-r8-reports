@@ -1,0 +1,24 @@
+@media print{
+	.btn-details,
+	.sidebarMenu,
+	.card{display:none;}
+	.cardcontent{
+		display: flex;
+		width: 100%;
+		/*margin-right: 3px;
+		justify-content: center;*/
+		/*margin-right: ;*/
+	}
+	.main-cont{
+		margin-left: 0 !important;
+		width: 100%;
+	}
+	.tble-print
+	{
+		margin: 0 auto;
+		padding: 0;
+		width: 100%;
+		display: flex;
+		justify-content: center;
+	}
+}

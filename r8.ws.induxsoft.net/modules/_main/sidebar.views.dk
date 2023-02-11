@@ -1,0 +1,91 @@
+﻿#include "dkli.dkh"
+#!
+module "sidebar_views"
+{
+    #!
+    launch_first::&modules
+    {
+        ref l=list.create_from_fields(modules)
+
+        if list.count(l)<1
+        {
+            return
+        }
+
+        ref m=list.obj(field.obj(modules,list.str(l,0)),0)
+
+        first_submodule=url_module(field.str(m,"id"))
+
+        ##
+        script(type="text/javascript")
+        {
+            $'
+            refreshElement("#<first_submodule>","#workspace");
+            '
+        }
+        ##
+    }
+    #!
+    side_bar_group::title_group,&modules
+    {
+
+        if trim(title_group)!=""
+        {
+            ##
+            h6(class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted")
+            {
+                span{$"#<title_group>"}
+            }
+            ##
+        }
+        
+        ##
+        ul(class="nav flex-column")
+        {
+            ##
+            for i=0;i<list.count(modules)
+            {
+                ref m=list.obj(modules,i)
+                ##
+                li(class="nav-item")
+                {
+                    
+                    button(class="btn nav-link" onclick="refreshElement('#<url_module(field.str(m,'id'))>','#workspace');")
+                    {
+                        span("data-feather"="file-text"){}
+                        $"#<field.str(m,'title')>"
+                    }
+                }
+                ##
+            }
+            ##
+        }
+        ##    
+    }
+    create_link_navbar::
+    {
+        @name=@@(@http_context,"request/get/namews")
+        @namews=list.str(split(cookie.get("namews"),";"),0)
+        if @name!=""
+        {
+            do cookie.set("namews", @name)
+            @namews=list.str(split(cookie.get("namews"),";"),0)
+        }
+        ref lista_address=list.create()
+        new address
+        {
+            @"link": ifstr(@namews!="",@namews,"workspace")
+            @"target":@redirec_origin
+            @"type":"workspace"
+        }
+        new naddress
+        {
+            @"link": "r8 reports"
+            @"target":"./?token="+@@(@http_context,"session/user/ids")
+            @"type":"r8"
+        }
+        do list.add(lista_address,address)
+        do list.add(lista_address,naddress)
+        @http_context<"session/address_workspaces*">:lista_address
+    }
+}

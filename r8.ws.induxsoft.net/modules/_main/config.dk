@@ -1,0 +1,12 @@
+#include "dkli.dkh"
+#!
+module "config.main.module"
+{
+    @main_submodules_prefix="_main/modules"
+    @finderModule=path.concat(@BASE_URL,"modules/_main/modules/_utils/finder/")
+
+    include lib_path("auth.dk")
+    do SPA_RECONNECT()
+
+    
+}

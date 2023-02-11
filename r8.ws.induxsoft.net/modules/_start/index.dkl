@@ -1,0 +1,33 @@
+﻿#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+	#include "website.dkl"
+
+    if field.dstr(@SPA_CONTEXT,@KEY_CONNECTION_QNAME,"")==""
+    {
+        module_name=@CONNECT_MODULE
+    }
+    else
+    {
+
+        if field.dstr(@SPA_CONTEXT,@KEY_SESSION_ID,"")==""
+        {
+            module_name=@LOGIN_MODULE
+        }
+        else
+        {
+            module_name=@MAIN_MODULE
+        }
+    }
+ 
+    exception
+    {
+        module_name=SET_ERROR_MESSAGE(last_error())
+    }
+    include setModulePath(module_name)
+
+
+}

@@ -1,0 +1,43 @@
+﻿#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+
+    #include "views.dk"
+
+    include lib_path("auth.dk")
+
+    content_module::
+    {
+        do views.login_form()
+    }
+    
+    if field.exist(@SPA_CONTEXT,"current_request/data/userId") && field.exist(@SPA_CONTEXT,"current_request/data/password")
+    {
+        new plogin
+        {
+            @"qname":field.str(@SPA_CONTEXT,@KEY_CONNECTION_QNAME)
+            @"uid":field.str(@SPA_CONTEXT,"current_request/data/userId")
+            @"pwd":field.str(@SPA_CONTEXT,"current_request/data/password")
+        }
+	
+        do SPA_LOGIN(plogin)
+	
+        include setModulePath(@MAIN_MODULE)
+    }
+    else
+    {
+        do render_page()
+    }
+
+    exception
+    {
+        include setModulePath(SET_ERROR_MESSAGE("Usuario o contraseña inválidos"))
+    }
+    
+}

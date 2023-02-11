@@ -1,0 +1,73 @@
+#include "dkli.dkh"
+#!
+module "lib.submodules"
+{
+    #!
+    initReportParameter::&record,field_path,value
+    {
+        if not(field.exist(record,field_path))
+        {
+            record<field_path>:value
+        }
+    }
+
+    #!
+    list_modules_group::title_group,&modules
+    {
+
+        if trim(title_group)!=""
+        {
+            ##
+            div(class="row")
+            {
+                div(class="col")
+                {
+                    h5 {$"#<title_group>"}
+                }
+            }
+            ##
+        }
+        
+        ##
+        div(class="row")
+        {
+            ##
+			
+            for i=0;i<list.count(modules)
+            {
+                ref m=list.obj(modules,i)
+                ##
+                div(class="card" style="max-width:280px;")
+                {
+                    div(class="card-header" align="center")
+                    {
+                        button(class="btn btn-link" onclick="refreshElement('#<url_module(field.str(m,'id'))>','#workspace');")
+                        {
+                            h6{$"#<field.str(m,'title')>"}
+                        }
+                    }
+                    div(class="card-body" align="center")
+                    {
+                        p{$"#<field.str(m,'description')>"}
+                    }
+                }
+                ##
+            }
+            ##
+        }
+        ##    
+    }
+
+    list_modules::sub_module_prefix
+    {
+        ref groups=modules_groups(path.concat(@MODULES_PATH,sub_module_prefix),sub_module_prefix)
+        ref l=list.create_from_fields(groups)
+		
+
+        for i=0;i<list.count(l)
+        {
+            do list_modules_group(list.str(l,i),field.obj(groups,list.str(l,i)))
+        }
+
+    }
+}

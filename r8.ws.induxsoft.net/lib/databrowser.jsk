@@ -1,0 +1,64 @@
+var #<tableVar>=ediTable("#<tableId>");
+
+#<tableVar>.DataArray=#<to.json(arrayData)>;
+#<tableVar>.AutoAddRow=false;
+#<tableVar>.ColumnsDefaultType=EdiTable.Const.Columns.Types.NoEditable;
+
+
+function #<createFunctionName>()
+{
+    refreshElement("#<endPointCreate>");
+}
+
+function #<readFunctionName>()
+{
+    let row=#<tableVar>.CurrentRowIndex();
+
+    if (row<0)
+    {
+        //Mostrar mensaje de seleccionar elemento
+        bootbox.alert({
+            title:"Aviso",
+            message:"Debe seleccionar un elemento de la tabla", 
+        });
+        return;
+    }
+
+    var data={"#<keyField>":#<tableVar>.DataArray[row]["#<keyField>"]};
+    
+    refreshElement("#<endPointRead>", undefined, data);
+}
+
+function #<deleteFunctionName>()
+{
+    let row=#<tableVar>.CurrentRowIndex();
+
+    if (row<0)
+    {
+        //Mostrar mensaje de seleccionar elemento
+        bootbox.alert({
+            title:"Aviso",
+            message:"Debe seleccionar un elemento de la tabla", 
+        });
+        
+        return;
+    }
+
+    //Mostrar mensaje de confirmación de la eliminación
+    bootbox.confirm(
+    {
+        title:"Advertencia",
+        message:"¿Seguro que desea eliminar este elemento?", 
+        callback:function(result)
+        { 
+            if (result)
+            {
+                var data={"#<keyField>":#<tableVar>.DataArray[row]["#<keyField>"]};
+
+                refreshElement("#<endPointDelete>", undefined, data);
+            }
+        }
+    });
+
+    
+}

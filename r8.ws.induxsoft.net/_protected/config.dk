@@ -1,0 +1,15 @@
+#include "dkli.dkh"
+#!
+program
+{
+	protocol=ifstr(parse.bool(@@(@http_context,"request/headers/HTTPS")),"https","http")
+	host=@@(@http_context,"request/headers/HTTP_HOST")
+	//link del icono home de la barra de navegación
+	@icon_home="https://ws.induxsoft.net/icons/home.icon.png"//protocol+"://"+host+"/icons/home.icon.png"
+	if not(file.exists(@icon_home)){@icon_home="https://ws.induxsoft.net/icons/home.icon.png"}
+	//lisnk del icono setting de la barra de navegacion
+	@icon_setting="https://ws.induxsoft.net/icons/settings.icon.png"//protocol+"://"+host+"/icons/settings.icon.png"
+	@default_render_template="web/r8.ws.induxsoft.net/_protected/default.dk"
+	@template="web/r8.ws.induxsoft.net/_protected/default.htt"
+	@url_origin="https://ws.induxsoft.net/"
+}

@@ -1,0 +1,49 @@
+﻿<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5>Ventas por linea</h5>
+                    </div>
+                    <div class="col-sm-12 col-md-4" align="right">
+                        <button type="btn" class="btn btn-success d-print-none" onclick="refreshReport();">Actualizar informe</button>
+                        <button type="btn" class="btn btn-primary d-print-none" onclick="window.print();">Imprimir</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <form id="form_reportParameters">
+                    <div class="row">
+					    <div class="col-md-4">
+                            <label for="finicio">
+                                Fecha de inicio:
+                            </label>
+                            <input id="finicio" name="finicio" class="form-control" type="date" value="#<field.dstr(@SPA_CONTEXT,'current_request/data/finicio','')>">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="ffinal">
+                                Fecha final:
+                            </label>
+                            <input id="ffinal" name="ffinal" class="form-control" type="date" value="#<field.dstr(@SPA_CONTEXT,'current_request/data/ffinal','')>">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="cconsumo">
+                                Centro de consumo:
+                            </label>
+                            #<render('dbSelect_cconsumo')>
+                        </div>
+						
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            #<render('content_result_data')>
+        </div>
+    </div>
+
+</div>
+#<render('content')>

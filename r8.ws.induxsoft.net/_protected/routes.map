@@ -1,0 +1,2 @@
+GET: / >$web/r8.ws.induxsoft.net
+GET: /{ws}/ >$web/r8.ws.induxsoft.net/modules/_main/index.dkl

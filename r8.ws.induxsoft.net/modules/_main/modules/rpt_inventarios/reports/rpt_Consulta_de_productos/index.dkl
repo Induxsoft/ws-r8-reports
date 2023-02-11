@@ -1,0 +1,129 @@
+#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+    #include "uielements.dkl"
+    #include "uielements.dbtable.dkl"
+
+    include lib_path("uie.dbfkinput.dk")
+
+    init_parameters::
+    {
+        if not(isnull(field.dobj(@SPA_CONTEXT,'current_request/data',@null)))
+        {
+            
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/text_search',@@(@SPA_CONTEXT,'current_request/data/text_search'))
+        }
+    }
+
+    #!
+    cell_link_func::&params, &row, &cell
+    {
+        //params=Parámetros de la table (def_table)
+        //row=Datos (registro) de la fila
+        //cell=Información de la celda
+
+        //cell<"text">:@@(cell,"cell_type")
+        if @@(cell,"cell_type")!="data" &&  @@(cell,"cell_type")!="unknow" { return }
+        if @@(cell,"column")=="_actions"
+        {
+            if not(isnull(field.dobj(@SPA_CONTEXT,'current_request/data',@null)))
+            {
+                do initReportParameter(@SPA_CONTEXT,'current_request/data/sys_pk',@@(row,"sys_pk"))
+            }
+            //&cod=#<@@(row,"codigo")>&desc=#<@@(row,"descripcion")>&uni=#<@@(row,"Unidad")>
+            cell<"text">:ftext('<button class="btn btn-link btn-details" onclick="refreshElement(\'#<@@(@SPA_CONTEXT,"current_request/view")>details.dkl?sys_pk=#<@@(row,"sys_pk")>&module=#<@@(@SPA_CONTEXT,"current_request/view")>\',\'#<@@(@SPA_CONTEXT,"current_request/element_id")>\');">
+                    <h6>Detalles</h6>
+                </button>')
+            
+        }
+        
+    }
+   
+    content_result_data::
+    {
+        if @@(@SPA_CONTEXT,'current_request/data/text_search')==""{return}
+
+       // ref data=dbr.table(SPA_MAIN_DB(),"Select p.sys_pk, p.codigo, p.descripcion,p.ilinea, p.Unidad,p.Precio1 Precio,d.Codigo as divisa from producto p INNER JOIN divisa d ON p.IDivisa=d.Sys_PK where p.codigo like '@{text_search}%' or p.sys_pk like '@{text_search}%' or p.descripcion like '@{text_search}%';",field.dobj(@SPA_CONTEXT,"current_request/data",@null))
+        
+        new defTable
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"Select p.sys_pk, p.codigo, p.descripcion,p.ilinea, p.Unidad,p.Precio1 Precio,d.Codigo as divisa from producto p INNER JOIN divisa d ON p.IDivisa=d.Sys_PK where p.codigo like '%@{text_search}%' or p.sys_pk like '%@{text_search}%' or p.descripcion like '%@{text_search}%' or p.Unidad like '%@{text_search}%' or d.Codigo like '%@{text_search}%' limit 1000;"
+            @"parameters*":field.dobj(@SPA_CONTEXT,"current_request/data",@null)
+            // @"datatable*":data
+            @"id":"tabla_editable"
+            @"value_field": "sys_pk"
+            member @"attributes"
+            {
+                @"class":"table table-hover"
+                @"style":"s"
+            }
+
+            member @"columns"
+            {
+                member @"codigo" 
+                {
+                    @"caption":"Código"
+                }
+                member @"descripcion" 
+                {
+                    @"caption":"Descripción"
+                }
+                member @"Unidad" 
+                {
+                    @"caption":"Unidad"
+                }
+                member @"Precio" 
+                {
+                    @"caption":"Precio"
+                    @"format":"$ #,#.00"
+                }
+                member @"divisa" 
+                {
+                    @"caption":"divisa"
+                }
+                member @"_actions"{
+                    @"caption":""
+                }
+            }
+            
+            @"build_array": @true 
+                                
+        }
+        point cell_link to cell_link_func
+        using defTable
+        {
+            @"before_cell*":cell_link
+            member @"attributes"
+            {
+                @"class":"table table-hover"
+            }
+        }
+       
+        do uie.dbTable(defTable)
+
+        if @count(@@(defTable,"&array_data"))<=0
+        {
+            #$
+            div(class="text-center")
+            {
+                h4(style="margin-top:10%"){"Sin concidencias"}
+            }
+            #!
+        }
+        
+        
+    }
+    do init_parameters()
+
+    content_module:: {   }
+
+    
+    do render_page()
+}

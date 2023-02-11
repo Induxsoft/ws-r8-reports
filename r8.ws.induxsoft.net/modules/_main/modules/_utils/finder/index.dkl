@@ -1,0 +1,103 @@
+﻿#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+    #include "uielements.dkl"
+    #include "uielements.dbtable.dkl"
+
+    init_parameters::
+    {
+        if not(isnull(field.dobj(@SPA_CONTEXT,'current_request/data',@null)))
+        {
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/text',"")
+        }
+    }
+
+    finderTableBeforeCell::&params,&row,&cell
+    {
+        if isnull(row) || isnull(cell)
+        {
+            return
+        }
+
+        if field.dstr(row,"_row_type","")!="detail" || field.dstr(cell,"column","")!="_selector"
+        {
+            return
+        }
+
+        html=ftext('<button class="btn btn-outline-secondary mb-1" type="button" onclick="onFinderSelectedRow(#<field.num(row,"_row_index")>);">&nbsp;&nbsp;</button>')
+        
+        cell<"text">:html
+
+    }
+
+    prepareFinderTable::
+    {
+        point fsel to finderTableBeforeCell
+
+        new dfinderTable
+        {
+            @"db*":SPA_MAIN_DB()
+            @"parameters*":field.dobj(@SPA_CONTEXT,"current_request/data",@null)
+            @"build_array":@true
+            @"before_cell*":fsel
+
+            member @"attributes"
+            {
+                @"class":"table"
+            }
+
+            member @"columns"
+            {
+                member "_selector"
+                {
+                    @"caption":""
+                }
+            }
+        }
+
+        
+
+        return dfinderTable
+    }
+
+    content_result_data::
+    {
+        if field.dstr(@SPA_CONTEXT,'current_request/data/text',"")==""
+        {
+            return
+        }
+
+        ref defTable=prepareFinderTable()
+
+        do finderItems(defTable)
+
+        do uie.dbtable(defTable)
+
+        ##
+        script(type="text/javascript")
+        {$'
+            finder_data_table=#<to.json(field.obj(defTable,"array_data"))>
+        '}
+        ##
+
+        if table.rows(field.obj(defTable,"datatable"))<1
+        {
+            ##
+            div(class="alert alert-danger"){h6{$"No hay resultados"}}
+            ##
+        }
+        
+    }
+
+    do init_parameters()
+
+    content_module:: {   }
+
+    do render_page()
+}

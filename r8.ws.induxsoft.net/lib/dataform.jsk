@@ -1,0 +1,14 @@
+function #<updateFunctionName>(d)
+{
+    var data=getFormData("#<formId>");
+
+    if (d!=undefined)
+        data=Object.assign(data,d);
+        
+    refreshElement("#<endPointUpdate>", undefined, data);
+}
+
+function #<listFunctionName>()
+{
+    refreshElement("#<endPointList>");
+}

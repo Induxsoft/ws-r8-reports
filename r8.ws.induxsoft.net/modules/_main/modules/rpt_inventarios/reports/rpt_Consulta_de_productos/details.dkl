@@ -1,0 +1,201 @@
+#include "dkli.dkh"
+#set "meta-xml-declaration" ""
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+    #include "uielements.dkl"
+    #include "uielements.dbtable.dkl"
+
+    include lib_path("uie.dbfkinput.dk")
+    sys_pk=@@(@http_context,'request/get/sys_pk')
+    module=@@(@http_context,"request/get/module")
+
+    ref data_producto=dbr.rec(SPA_MAIN_DB(),"select d.codigo as divisa,p.codigo,p.descripcion,p.unidad,p.Precio1,p.Precio2,p.Precio3,p.Precio4,p.Precio5,c.nombre from producto p inner join cfgimpuesto c on p.Impuestos=c.sys_pk INNER join divisa d on p.IDivisa=d.sys_pk where p.sys_pk="+sys_pk,@null)
+    desc=@@(data_producto,'descripcion')
+    cod=@@(data_producto,'codigo')
+    unidad=@@(data_producto,"unidad")
+    divisa=@@(data_producto,"divisa")
+    content_result_data::pk
+    {
+        @SPA_CONTEXT<"current_request/data/sys_pk">:str(pk)
+        new defTable
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"SELECT e.Sys_PK,e.Existencia,p.unidad,e.Saldo,COALESCE(a.CodCuenta,'') as CodCuenta,a.Codigo as codalmacen,a.Descripcion,
+                        p.Codigo as codprod
+                        FROM existencias e INNER JOIN almacen a ON e.IAlmacen=a.Sys_PK 
+                        INNER JOIN producto p ON e.FK_Producto_IExistencias=p.Sys_PK
+                        WHERE e.FK_Producto_IExistencias=@sys_pk;"
+            @"parameters*":field.dobj(@SPA_CONTEXT,"current_request/data",@null)
+            
+            // @"group_by":"Descripcion"
+            @"id":"tabla_editable"
+            @"value_field": "sys_pk"
+            member @"attributes"
+            {
+                @"class":"table"
+            }
+
+            // member @"rows_attributes"
+            // {
+            //     member @"begin_group"
+            //     {
+            //         @"class":"alert-secondary"
+            //     }
+            //     // member @"summary_group"
+            //     // {
+            //     //     @"class":"alert-secondary"
+            //     // }
+            // }
+            member @"columns"
+            {
+                member @"Descripcion" 
+                {
+                    @"caption":"Almacén"
+                }
+                member @"Existencia" 
+                {
+                    @"caption":"Existencia"
+                }
+                member @"unidad" 
+                {
+                    @"caption":"Unidad"
+                }
+                // member @"Precio2"
+                // {
+                //     @"caption":"Precio2"
+                //     @"format":"$ #,#.00"
+                // }
+                // member @"Precio3"
+                // {
+                //     @"caption":"Precio3"
+                //     @"format":"$ #,#.00"
+                // }
+                // member @"Precio4"
+                // {
+                //     @"caption":"Precio4"
+                //     @"format":"$ #,#.00"
+                // }
+                // member @"Precio5"
+                // {
+                //     @"caption":"Precio5"
+                //     @"format":"$ #,#.00"
+                // }
+            }
+            
+            // @"build_array": @true 
+                                
+        }
+        do uie.dbTable(defTable)
+        
+    }
+
+    card='<div class="row">
+                <div class="col card">
+                    <div class="card-header">
+                            <div class="row">
+                                <div class="col-md-12 d-flex align-items-end w-100 ml-1">
+                                    <div class="col-sm-12">
+                                        <button type="btn" class="btn btn-success d-print-none ml-2" onclick="refreshReport();">Actualizar</button>
+                                        <button type="btn" class="btn btn-primary d-print-none" onclick="window.print();">Imprimir</button>
+                                    </div>
+                                </div>
+                            </div>
+                    </div>
+                </div>
+            </div>'
+    ##
+    div(class="container-fluid")
+    {
+        $"#<card>"
+        br{}
+        div(class="row" style="width:100%")
+        {
+            input(disabled="" class="form-control" style="width:80%" value="#<cod +' - '+desc +' - '+@@(data_producto,'nombre')>"){""}
+            button(class="btn btn-link col-auto btn-details" style="" onclick="refreshElement('#<module>')"){"Cambiar"}
+        }
+        
+
+        br{}
+        div(class="row" )//style="border:1px solid #DFDFDF;"
+        {
+            table(class="table cardcontent" style="border:1px solid #DFDFDF;")
+            {
+                tr{
+                    td(style="border-right:1px solid #DFDFDF;"){
+                        div(class="col-12 mt-3 mb-3 ml-3 mr-3")
+                        {
+                            div(class="card cardcontent")
+                            {
+                                div(class="card-header cardcontent")
+                                {
+                                    h5(class="text-center"){"Existencias"}
+                                }
+                                div(class="card-body")
+                                {
+                                    #!
+                                    do content_result_data(sys_pk)    
+                                }
+                                
+                            }
+                            
+                        }
+                    }
+                    #$
+                    td{
+
+                        div(class="col-12 mt-3 mb-3 ml-3 mr-3")
+                        {
+
+                            div(class="card cardcontent")
+                            {
+                                div(class="card-header")
+                                {
+                                    h5(class="text-center"){"Precios"}
+                                }
+                                div(class="card-body")
+                                {
+                                        table(class="table cardcontent")
+                                        {
+                                            tr{
+                                                td(style="text-align:center"){"Precio1"}
+                                                td(style="text-align:right"){"$ #<@@(data_producto,'Precio1'):#,#.00> #<divisa>"}
+                                               
+                                            }
+                                            tr{
+                                                td(style="text-align:center"){"Precio2"}
+                                                td(style="text-align:right"){"$ #<@@(data_producto,'Precio2'):#,#.00> #<divisa>"}
+                                            }
+                                            tr{
+                                                td(style="text-align:center"){"Precio3"}
+                                                td(style="text-align:right"){"$ #<@@(data_producto,'Precio3'):#,#.00> #<divisa>"}
+                                            }
+                                            tr{
+                                                td(style="text-align:center"){"Precio4"}
+                                                td(style="text-align:right"){"$ #<@@(data_producto,'Precio4'):#,#.00> #<divisa>"}
+                                            }
+                                            tr{
+                                                td(style="text-align:center"){"Precio5"}
+                                                td(style="text-align:right"){"$ #<@@(data_producto,'Precio5'):#,#.00> #<divisa>"}
+                                            }
+                                        }
+                                }
+                                
+                            }
+                        }
+                    }
+                }
+            }
+            
+        }
+        
+        
+    }
+    // p{"#<to.json(@SPA_CONTEXT)>"}
+    ##
+}

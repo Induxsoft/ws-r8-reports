@@ -1,0 +1,132 @@
+#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+    #include "uielements.dkl"
+    #include "uielements.dbtable.dkl"
+
+    init_parameters::
+    {
+        if not(isnull(field.dobj(@SPA_CONTEXT,'current_request/data',@null)))
+        {
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/finicio',date_str(now(),"yyyy-MM-dd"))
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/ffinal',date_str(now(),"yyyy-MM-dd"))
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/cconsumo',dbr.str(SPA_MAIN_DB(),"select sys_pk from cconsumo order by descripcion limit 1;",@null))
+			do initReportParameter(@SPA_CONTEXT,'current_request/data/tipocl',dbr.str(SPA_MAIN_DB(),"select sys_pk from tipocliente order by descripcion limit 1;",@null))
+			
+        }
+    }
+
+    #!
+    dbSelect_cconsumo::
+    {
+        new dcconsumo
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"select sys_pk, descripcion from cconsumo order by descripcion;"
+            @"value_field":"sys_pk"
+            @"text_field":"descripcion"
+            @"id":"cconsumo"
+            @"selected": field.dstr(@SPA_CONTEXT,'current_request/data/cconsumo','')
+            member @"attributes"
+            {
+                @"class":"form-control"
+            }
+        }
+
+        do uie.dbSelect(dcconsumo)
+    }
+    
+ dbSelect_tipocl::
+    {
+        new dctipocl
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"select sys_pk, descripcion from tipocliente order by descripcion;"
+            @"value_field":"sys_pk"
+            @"text_field":"descripcion"
+            @"id":"tipocl"
+            @"selected": field.dstr(@SPA_CONTEXT,'current_request/data/tipocl','')
+            member @"attributes"
+            {
+                @"class":"form-control"
+            }
+        }
+
+        do uie.dbSelect(dctipocl)
+    }
+
+    content_result_data::
+    {
+        @SPA_CONTEXT<"current_request/data/nfinicio">:NDATETIME.FROMSTR(field.str(@SPA_CONTEXT,'current_request/data/finicio'),"yyyy-MM-dd")
+		@SPA_CONTEXT<"current_request/data/nfinal">:NDATETIME.FROMSTR(field.str(@SPA_CONTEXT,'current_request/data/ffinal'),"yyyy-MM-dd")
+        
+        new defTable
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"SELECT qxv.Codigo,qxv.Descripcion,Sum(qxv.VentaImporte-qxv.DevImporte) AS SumaDeVentaImporte FROM qryVentasXLinea qxv WHERE qxv.ND_Fecha>=@nfinicio AND qxv.ND_Fecha<=@nfinal AND qxv.ICConsumo=@cconsumo  GROUP BY qxv.Codigo, qxv.Descripcion ORDER BY qxv.Descripcion;"
+
+            @"parameters*":field.dobj(@SPA_CONTEXT,"current_request/data",@null)
+            //@"group_by":"Codigo"
+
+            member @"attributes"
+            {
+                @"class":"table"
+            }
+
+            member @"rows_attributes"
+            {
+                member @"begin_group"
+                {
+                    @"class":"alert-secondary"
+                }
+                member @"summary_group"
+                {
+                    @"class":"alert-secondary"
+                }
+            }
+            
+            //@"show_summary_group":@false
+            //@"show_summary":@false
+
+            member @"columns"
+            {
+                 member @"Codigo"
+                {
+                 @"caption":"Código"
+                }
+                member @"Descripcion"
+                {
+                @"caption":"Linea"
+                }
+                member @"SumaDeVentaImporte"
+                {
+                @"caption":"Importe"
+                 @"format":"$ #,#.00"
+                 @"summary":"sum"
+                 member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+                      
+                     
+            }    
+        }
+
+        do uie.dbtable(defTable)
+        
+    }
+
+    do init_parameters()
+
+    content_module:: {   }
+
+    do render_page()
+}

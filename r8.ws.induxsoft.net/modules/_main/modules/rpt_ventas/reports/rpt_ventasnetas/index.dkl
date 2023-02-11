@@ -1,0 +1,121 @@
+﻿#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+    #include "uielements.dkl"
+    #include "uielements.dbtable.dkl"
+
+    init_parameters::
+    {
+        if not(isnull(field.dobj(@SPA_CONTEXT,'current_request/data',@null)))
+        {
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/finicio',date_str(now(),"yyyy-MM-dd"))
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/ffinal',date_str(now(),"yyyy-MM-dd"))
+        }
+    }
+
+    #!
+      content_result_data::
+    {
+		@SPA_CONTEXT<"current_request/data/nfinicio">:NDATETIME.FROMSTR(field.str(@SPA_CONTEXT,'current_request/data/finicio'),"yyyy-MM-dd")
+		@SPA_CONTEXT<"current_request/data/nfinal">:NDATETIME.FROMSTR(field.str(@SPA_CONTEXT,'current_request/data/ffinal'),"yyyy-MM-dd")
+	/*	
+		##
+		p{$"#<to.json(@SPA_CONTEXT)>"}
+		##
+		*/
+		
+        new defTable
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"SELECT Z.Codigo, Z.Descripcion, Z.Unidad, SUM(Z.Ventas) AS VentaBruta, SUM(Z.Devoluciones) AS Devoluciones, SUM(Z.Importe) AS VentaSubtotal, 
+			SUM(Z.ImpuestosV) AS VentaImpuestos, SUM(Z.Importe+Z.ImpuestosV) AS VentaTotal,SUM(Z.ImpDev) AS DevSubtotal,SUM(Z.DevImpuestos) AS DevImpuestos,
+			SUM(Z.ImpDev+Z.DevImpuestos) AS DevTotal FROM  (qryrepcostoventas Z  INNER JOIN Cliente ON Cliente.Sys_PK = Z.ICliente) INNER JOIN Producto ON z.PKProducto = Producto.Sys_PK 
+			WHERE Z.ND_Fecha>=@nfinicio AND Z.ND_Fecha<=@nfinal GROUP BY Z.Codigo, Z.Descripcion, Z.Unidad ORDER BY Z.Descripcion;"
+
+            @"parameters*":field.dobj(@SPA_CONTEXT,"current_request/data",@null)
+ 
+			member @"attributes"
+            {
+                @"class":"table"
+            }
+			
+            member @"columns"
+            {
+                member @"Codigo"
+                {
+                    @"caption":"Código"
+                }
+				member @"Descripcion"
+                {
+                    @"caption":"Descripción"
+                }
+				
+				member @"Unidad"
+                {
+                    @"caption":"Unidad"
+					@"summary":"Totales: " //Esta leyenda solo aparece en el resumen general
+                }
+				member @"VentaBruta"
+                {
+                    @"caption":"Ventas"
+                    @"format":" #,#.00"
+                    @"summary":"sum" //Esta leyenda solo aparece en el resumen general
+					member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+                
+                member @"VentaSubtotal"
+                {
+                    @"caption":"SubTotal"
+                    @"format":"$ #,#.00"
+                    @"summary":"sum"
+                    member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+				member @"DevImpuestos"
+                {
+                    @"caption":"Impuestos"
+                    @"format":"$ #,#.00"
+                    @"summary":"sum"
+                    member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+				member @"VentaTotal"
+                {
+                    @"caption":"Total"
+                    @"format":"$ #,#.00"
+                    @"summary":"sum"
+                    member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+            }
+        }
+
+        do uie.dbtable(defTable)
+        
+    }
+
+    do init_parameters()
+
+    content_module:: {   }
+
+    do render_page()
+}

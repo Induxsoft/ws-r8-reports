@@ -1,0 +1,19 @@
+﻿#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+
+    @reports_prefix="_main/modules/rpt_compras/reports"
+
+    content_module::
+    {
+        do list_modules(@reports_prefix)
+    }
+
+    do render_page()
+}

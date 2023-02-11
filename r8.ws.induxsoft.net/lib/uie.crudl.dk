@@ -1,0 +1,59 @@
+#include "dkli.dkh"
+#!
+module "uie.crudl"
+{
+    jsCreateFunctionName::
+    {
+        return "create_"+@CRUDL_TableId
+    }
+
+    jsReadFunctionName::
+    {
+        return "read_"+@CRUDL_TableId
+    }
+
+    jsDeleteFunctionName::
+    {
+        return "delete_"+@CRUDL_TableId
+    }
+
+    jsUpdateFunctionName::
+    {
+        return "update_"+@CRUDL_FormId
+    }
+
+    jsListFunctionName::
+    {
+        return "list_"+@CRUDL_FormId
+    }
+
+    jsDataBrowser:: &defTable
+    {
+        tableId:defTable<"id">
+        arrayData:defTable<"&array_data">
+        keyField:defTable<"value_field">
+        
+        endPointCreate=@EndPointCreate
+        endPointRead=@EndPointRead
+        endPointDelete=@EndPointDelete
+
+        createFunctionName=jsCreateFunctionName()
+        readFunctionName=jsReadFunctionName()
+        deleteFunctionName=jsDeleteFunctionName()
+
+        tableVar="v_"+tableId
+
+        return ftext(readFile("databrowser.jsk"))
+    }
+
+    jsDataForm::formId
+    {
+        updateFunctionName=jsUpdateFunctionName()
+        listFunctionName=jsListFunctionName()
+
+        endPointUpdate=@EndPointUpdate
+        endPointList=@EndPointList
+
+        return ftext(readFile("dataform.jsk"))
+    }
+}

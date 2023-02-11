@@ -1,0 +1,88 @@
+﻿#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+    #include "uielements.dkl"
+    #include "uielements.dbtable.dkl"
+
+    init_parameters::
+    {
+        if not(isnull(field.dobj(@SPA_CONTEXT,'current_request/data',@null)))
+        {
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/finicio',date_str(now(),"yyyy-MM-dd"))
+            
+        }
+    }
+
+    #!
+      content_result_data::
+    {
+		@SPA_CONTEXT<"current_request/data/nfinicio">:NDATETIME.FROMSTR(field.str(@SPA_CONTEXT,'current_request/data/finicio'),"yyyy-MM-dd")
+		
+		/*##
+		p{$"#<to.json(@SPA_CONTEXT)>"}
+		##*/
+		
+		
+        new defTable
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"SELECT COALESCE(Z.Codigo,'') as Codigo, COALESCE(Z.Nombre,'') as Nombre, COALESCE((SUM(DCxC.Debe)+SUM(DCxC.IntMoratorios)-SUM(DCxC.Bonificaciones)-SUM(DCxC.Pagos)),0) AS Total
+                       FROM cliente Z INNER JOIN DCxC ON Z.Sys_PK = DCxC.ICliente
+                       WHERE (DCxC.Aplicable)!='@{nfinicio}' group by Nombre;"
+
+            @"parameters*":field.dobj(@SPA_CONTEXT,"current_request/data",@null)
+ 
+			member @"attributes"
+            {
+                @"class":"table"
+            }
+			
+            member @"columns"
+            {
+                member @"Codigo"
+                {
+                    @"caption":"Código"
+                }
+
+				member @"Nombre"
+                {
+                    @"caption":"Nombre"
+                    //@"format":"$ #,#.00"
+                    @"summary":"Totales: " //Esta leyenda solo aparece en el resumen general
+					member @"attributes"
+                    {
+                        @"align":"center"
+                        @"style":"text-align:center"
+                    }
+                }
+				
+				member @"Total"
+                {
+					@"format":"$ #,#.00"
+                    @"caption":"Vencido"
+					@"summary":"sum" //Esta leyenda solo aparece en el resumen general
+					{
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+            }
+        }
+
+        do uie.dbtable(defTable)
+        
+    }
+
+
+    do init_parameters()
+
+    content_module:: {   }
+
+    do render_page()
+}

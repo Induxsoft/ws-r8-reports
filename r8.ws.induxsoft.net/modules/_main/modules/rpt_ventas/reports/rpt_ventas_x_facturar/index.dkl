@@ -1,0 +1,154 @@
+﻿#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+    #include "uielements.dkl"
+    #include "uielements.dbtable.dkl"
+
+    init_parameters::
+    {
+        if not(isnull(field.dobj(@SPA_CONTEXT,'current_request/data',@null)))
+        {
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/finicio',date_str(now(),"yyyy-MM-dd"))
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/ffinal',date_str(now(),"yyyy-MM-dd"))		
+			do initReportParameter(@SPA_CONTEXT,'current_request/data/cconsumo',dbr.str(SPA_MAIN_DB(),"select sys_pk from cconsumo order by descripcion limit 1;",@null))			
+        }
+    }
+
+    #!
+	dbSelect_cconsumo::
+    {
+        new dcconsumo
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"select sys_pk, descripcion from cconsumo order by descripcion;"
+            @"value_field":"sys_pk"
+            @"text_field":"descripcion"
+            @"id":"cconsumo"
+            @"selected": field.dstr(@SPA_CONTEXT,'current_request/data/cconsumo','')
+            member @"attributes"
+            {
+                @"class":"form-control"
+            }
+        }
+
+        do uie.dbSelect(dcconsumo)
+    }
+    
+    content_result_data::
+    {
+		@SPA_CONTEXT<"current_request/data/nfinicio">:NDATETIME.FROMSTR(field.str(@SPA_CONTEXT,'current_request/data/finicio'),"yyyy-MM-dd")
+		@SPA_CONTEXT<"current_request/data/nfinal">:NDATETIME.FROMSTR(field.str(@SPA_CONTEXT,'current_request/data/ffinal'),"yyyy-MM-dd")
+		
+		
+        new defTable
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"SELECT Divisa.Codigo,Venta.Fecha, Venta.Referencia, Cliente.Nombre, (Venta.Subtotal-Venta.Descuento1-Venta.Descuento2) AS VentaSubTotal, (Venta.Impuesto1+Venta.Impuesto2+Venta.Impuesto3+Venta.Impuesto4) AS Impuestos, 
+			(Venta.Subtotal-Venta.Descuento1-Venta.Descuento2) + (Venta.Impuesto1+Venta.Impuesto2+Venta.Impuesto3+Venta.Impuesto4) AS Total,cFormasPago.Const AS FPago, cStatusAdministrativos.Const AS STATUS, Venta.ICliente, Venta.ICConsumo, Cliente.Tipo
+			FROM cStatusAdministrativos INNER JOIN (Cliente INNER JOIN (cFormasPago INNER JOIN Venta ON cFormasPago.ID = Venta.FormaPago) ON Cliente.Sys_PK = Venta.ICliente) 
+			ON cStatusAdministrativos.ID = Venta.StatusAdministrativo INNER JOIN Divisa ON Divisa.Sys_PK = Venta.IDivisa
+			WHERE (((Venta.Documento)=3 OR (Venta.Documento)=6) AND ((Venta.StatusAdministrativo)<>99) AND ((Venta.StatusFacturacion)<>3)) AND (((YEAR(Venta.Fecha)*10000)+(MONTH(Venta.Fecha)*100)+
+			DAY(Venta.Fecha))>=@nfinicio AND ((YEAR(Venta.Fecha)*10000)+(MONTH(Venta.Fecha)*100)+DAY(Venta.Fecha))<=@nfinal) AND Venta.ICConsumo=@cconsumo ORDER BY Venta.Fecha,Venta.Referencia;"
+
+            @"parameters*":field.dobj(@SPA_CONTEXT,"current_request/data",@null)
+            @"group_by":"Codigo"
+
+            member @"attributes"
+            {
+                @"class":"table"
+            }
+
+            member @"rows_attributes"
+            {
+                member @"begin_group"
+                {
+                    @"class":"alert-secondary"
+                }
+                member @"summary_group"
+                {
+                    @"class":"alert-secondary"
+                }
+            }
+            
+            //@"show_summary_group":@false
+            //@"show_summary":@false
+
+            member @"columns"
+            {
+                member @"Fecha"
+                {
+                 @"caption":"Fecha"
+                }
+				member @"Referencia"
+                {
+                 @"caption":"Referencia"
+                }
+				member @"Nombre"
+                {
+                 @"caption":"Cliente"
+                }
+                member @"VentaSubTotal"
+                {
+                @"caption":"Subtotal"
+                 @"format":"$ #,#.00"
+                 @"summary":"sum"
+                 member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+                member @"Impuestos"
+                {
+                @"caption":"Impuestos"
+                 @"format":"$ #,#.00"
+                 @"summary":"sum"
+                 member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+				
+				member @"Total"
+                {
+                @"caption":"Total"
+                 @"format":"$ #,#.00"
+                 @"summary":"sum"
+                 member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+				member @"Codigo"
+                {
+                @"caption":"Divisa"
+                }
+				member @"FPago"
+                {
+                @"caption":"Forma de Pago"
+                }
+				member @"STATUS"
+                {
+                @"caption":"Estatus"
+                }
+            }    @"show_summary":@false
+        }
+
+        do uie.dbtable(defTable)
+        
+    }
+
+    do init_parameters()
+
+    content_module:: {   }
+
+    do render_page()
+}

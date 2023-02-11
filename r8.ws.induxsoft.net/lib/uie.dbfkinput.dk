@@ -1,0 +1,77 @@
+﻿#include "dkli.dkh"
+#!
+module "uie.dbFKinput"
+{
+    @dbFKinput.class.display="form-control"
+    @dbFKinput.class.button="btn btn-secondary d-print-none"
+    @dbFKinput.class.clearbutton="btn btn-secondary d-print-none"
+    @dbFKinput.class.inputgroup="input-group"
+    @dbFKinput.class.inputgroup.append="input-group-append"
+
+    #!
+    uie.dbFKinput:: &params
+    {
+        input_id=field.dstr(params,'id','dbFKinput_'+uuid())
+
+        if not(field.exist(params,"display_attributes"))
+        {
+            using params
+            {
+                member @"display_attributes"
+                {
+                    @"class":@dbFKinput.class.display
+                    @"onclick":"ifempty_fire_fkbutton('"+input_id+"');"
+                    @"ondblclick":"$('#fkinput_button_"+input_id+"').click();"
+                }
+            }
+        }
+
+        if not(field.exist(params,"button_attributes"))
+        {
+            using params
+            {
+                member @"button_attributes"
+                {
+                    @"class":@dbFKinput.class.button
+                    @"onclick":"onEditFKinput('"+input_id+"','"+field.dstr(params,"item_type","")+"','"+field.dstr(params,"value_field","")+"','"+field.dstr(params,"display_field","")+"','"+field.dstr(params,"finder_title","")+"');"
+                    @"type":"button"
+                }
+            }
+        }
+
+        if not(field.exist(params,"clear_button_attributes"))
+        {
+            using params
+            {
+                member @"clear_button_attributes"
+                {
+                    @"class":@dbFKinput.class.clearbutton
+                    @"onclick":"onClearFKinput('"+input_id+"');"
+                    @"type":"button"
+                }
+            }
+        }
+
+        ##
+        div (class="#<@dbFKinput.class.inputgroup>")
+        {
+            input(type="hidden" id="#<input_id>" value="#<field.dstr(params,'value','')>"){}
+            input(type="hidden" id="--json_#<input_id>" value="#<field.dstr(params,'json_value','')>"){}
+            input(type="text" id="--display_#<input_id>" readonly="true" value="#<field.dstr(params,'display_value','')>" "#<htmlAttributesFromRec(field.dobj(params,'display_attributes',@null))>"="dbFKinputDisplay"){}
+            div(class="#<@dbFKinput.class.inputgroup.append>")
+            {
+                button(id="fkinput_button_#<input_id>" "#<htmlAttributesFromRec(field.dobj(params,'button_attributes',@null))>"="dbFKinputButton"){$"..."}
+                ##
+                if not(parse.bool(field.dstr(params,"hide_clear_button","0")))
+                {
+                    ##
+                    button("#<htmlAttributesFromRec(field.dobj(params,'clear_button_attributes',@null))>"="dbFKinputClearButton"){$"X"}
+                    ##
+                }
+                ##
+                $"#<field.dstr(params,'html_after_button','')>"
+            }
+        }
+        ##
+    }
+}

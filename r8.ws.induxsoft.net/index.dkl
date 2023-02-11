@@ -1,0 +1,41 @@
+﻿#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "website.dkl"
+	
+    head::
+    {
+        ##
+        title{$"#<@PAGE_TITLE>"}
+	
+        script(type="text/javascript")
+        {
+            $'
+            var spa_context=#<to.json(@SPA_CONTEXT)>;           
+            var modulo=0;
+
+            $(document).ready(function(){
+
+                bootbox.setDefaults({
+                    swapButtonOrder:true
+                    });
+
+                refreshElement(spa_context.START_MODULE);
+            }
+                
+            );
+            '
+        }
+        ##
+    }
+
+    body::
+    {
+       
+    }
+
+    do render_page()
+}

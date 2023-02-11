@@ -1,0 +1,179 @@
+﻿#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+    #include "uielements.dkl"
+    #include "uielements.dbtable.dkl"
+
+    init_parameters::
+    {
+        if not(isnull(field.dobj(@SPA_CONTEXT,'current_request/data',@null)))
+        {
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/finicio',date_str(now(),"yyyy-MM-dd"))
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/ffinal',date_str(now(),"yyyy-MM-dd"))			
+        }
+    }
+
+    #!
+	dbSelect_cconsumo::
+    {
+        new dcconsumo
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"select sys_pk, descripcion from cconsumo order by descripcion;"
+            @"value_field":"sys_pk"
+            @"text_field":"descripcion"
+            @"id":"cconsumo"
+            @"selected": field.dstr(@SPA_CONTEXT,'current_request/data/cconsumo','')
+            member @"attributes"
+            {
+                @"class":"form-control"
+            }
+        }
+
+        do uie.dbSelect(dcconsumo)
+    }
+    
+    content_result_data::
+    {
+		@SPA_CONTEXT<"current_request/data/nfinicio">:NDATETIME.FROMSTR(field.str(@SPA_CONTEXT,'current_request/data/finicio'),"yyyy-MM-dd")
+		@SPA_CONTEXT<"current_request/data/nfinal">:NDATETIME.FROMSTR(field.str(@SPA_CONTEXT,'current_request/data/ffinal'),"yyyy-MM-dd")
+		
+		
+        new defTable
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"SELECT Z.TipoCambio,Z.CDivisa, Z.TipoDocumento,CONVERT( DATE(Z.Fecha),CHAR) AS Fecha, Z.Referencia, Z.Codigo, Z.Descripcion, Z.Unidad, Z.Cantidad AS VentaBruta, ((Z.Cantidad*(Z.Precio))-(Z.Descuento1-Z.Descuento2)) 
+			AS VentaSubtotal, ((Z.Impuesto1+Z.Impuesto2+Z.Impuesto3+Z.Impuesto4)) AS VentaImpuestos, (((Z.Cantidad*Z.Precio)-Z.Descuento1-Z.Descuento2)+(Z.Impuesto1+Z.Impuesto2+Z.Impuesto3+Z.Impuesto4)) AS VentaTotal,
+			((((Z.Cantidad*(Z.Precio))*Z.TipoCambio)-(Z.Descuento1-Z.Descuento2)*Z.TipoCambio)+((Z.Impuesto1+Z.Impuesto2+Z.Impuesto3+Z.Impuesto4)*Z.TipoCambio)) AS VentaTotalMXN,
+			Cliente.Nombre AS NombreCliente FROM ((qryRepVentasXCliente Z INNER JOIN Producto ON Z.PKProducto = Producto.Sys_PK) INNER JOIN Venta ON Z.PKVenta = Venta.Sys_PK) 
+			INNER JOIN Cliente ON Z.ICliente = Cliente.Sys_PK WHERE Z.ND_Fecha>=@nfinicio  AND Z.ND_Fecha<=@nfinal AND icconsumo=@cconsumo ORDER BY Cliente.Nombre,Z.Fecha;"
+
+            @"parameters*":field.dobj(@SPA_CONTEXT,"current_request/data",@null)
+            @"group_by":"NombreCliente"
+
+            member @"attributes"
+            {
+                @"class":"table"
+            }
+
+            member @"rows_attributes"
+            {
+                member @"begin_group"
+                {
+                    @"class":"alert-secondary"
+                }
+                member @"summary_group"
+                {
+                    @"class":"alert-secondary"
+                }
+            }
+            
+            //@"show_summary_group":@false
+            //@"show_summary":@false
+
+            member @"columns"
+            {
+                 member @"Fecha"
+                {
+                 @"caption":"Fecha"
+                }
+				member @"Referencia"
+                {
+                 @"caption":"Referencia"
+                }
+				member @"Codigo"
+                {
+                 @"caption":"Código"
+                }
+                member @"Descripcion"
+                {
+                @"caption":"Descripción"
+                }
+				member @"Unidad"
+                {
+                @"caption":"Unidad"
+                }
+				member @"VentaBruta"
+                {
+                @"caption":"Ventas"
+				@"format":"#,#.0"
+				
+                }
+                member @"VentaSubtotal"
+                {
+                @"caption":"Subtotal"
+                 @"format":"$ #,#.00"
+                 
+                 member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+                member @"VentaImpuestos"
+                {
+                @"caption":"Impuestos"
+                 @"format":"$ #,#.00"
+                 
+                 member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+				member @"VentaTotal"
+                {
+                @"caption":"Total"
+                 @"format":"$ #,#.00"
+                 
+                 member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+				member @"CDivisa"
+                {
+                @"caption":"Divisa"
+				
+                }
+				member @"TipoCambio"
+                {
+                @"caption":"Tipo de Cambio"
+				@"format":"$ #,#.00"
+				member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+				member @"VentaTotalMXN"
+                {
+                @"caption":"Total MXN"
+                 @"format":"$ #,#.00"
+                 @"summary":"sum"
+                 member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+            }    
+        }
+
+        do uie.dbtable(defTable)
+        
+    }
+
+    do init_parameters()
+
+    content_module:: {   }
+
+    do render_page()
+}

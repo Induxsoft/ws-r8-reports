@@ -1,0 +1,104 @@
+﻿#include "dkli.dkh"
+#!
+module "Auth.Library"
+{
+    do _map_function(@lib_dbr,"induxsoft.Connections.Manager","ResetStorage","reset","void","void")
+    auth.login::&params
+    {
+        if trim(field.dstr(params,"qname",""))==""
+        {
+            do rise_error(-99,"No se ha indicado el nombre cualificado de la conexión.")
+        }
+
+        if tolower(@@(@http_context,"session/idp/qname"))==tolower(field.dstr(params,"qname",""))
+        {
+            //Hay una sesión recuperada por la BWL
+            ref res=record.copy(@@(@http_context,"&session/user"),"*")
+            res<"database*">:@@(@http_context,"&session/idp/database")
+            params<"ids">:@@(@http_context,"session/user/ids")
+            return res
+        }
+
+        if trim(field.dstr(params,"ids",""))!=""
+        {
+            //Intento de recuperación de la sesión
+            ref db=dbr.reconnect(trim(field.str(params,"qname")),trim(field.str(params,"ids")))
+        }
+        else
+        {
+            if field.dstr(params,"uid","")!=""
+            {
+                if isset("@UseHashUnicode")
+                {
+                    do dbr.setHashUnicode(@UseHashUnicode)    //Usar la comparación de Hash MD5 Unicode de R5
+                }
+                ref db=dbr.login(trim(field.str(params,"qname")),field.str(params,"uid"),field.str(params,"pwd"))
+            }
+            else
+            {
+                do rise_error(-99,"Parámetros incorrectos")
+            }
+        }
+
+        params<"ids">:dbr.getSID(db)
+
+        ref uinfo=dbr.rec(db,"select u.userId, u.userName from tuser u inner join sys_session s on u.sys_pk=s.iuser where s.sys_guid=@ids;",params)
+
+        new res
+        {
+            @"ids":field.str(params,"ids")
+            @"uid":field.str(uinfo,"userId")
+            @"name":field.str(uinfo,"userName")
+            @"multifactor":@false
+            @"verified_email":@false
+            @"verified_mobile":@false
+            @"database*":db
+        }
+
+        return res
+
+    }
+
+    auth.logout::&params
+    {
+        if trim(field.dstr(params,"qname",""))==""
+        {
+            do rise_error(-99,"No se ha indicado el nombre cualificado de la conexión.")
+        }
+
+        if trim(field.dstr(params,"ids",""))!=""
+        {
+            //Intento de recuperación de la sesión
+            do dbr.logout(dbr.reconnect(trim(field.str(params,"qname")),trim(field.str(params,"ids"))),trim(field.str(params,"ids")))
+        }
+        else
+        {
+            do rise_error(-99,"Parámetros incorrectos")
+        }
+
+        return @true
+    }
+
+    auth.dcd::&params
+    {
+        do rise_error(-99,"Característica no implementada")
+    }
+
+    auth.signin::&params
+    {
+        do rise_error(-99,"Característica no implementada")
+    }
+
+    auth.info::&params
+    {
+        new res
+        {
+            @"multifactor":@false
+            @"verified_email":@false
+            @"verified_mobile":@false
+        }
+
+        return res
+    }
+
+}

@@ -1,0 +1,178 @@
+﻿#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+    #include "uielements.dkl"
+    #include "uielements.dbtable.dkl"
+
+    init_parameters::
+    {
+        if not(isnull(field.dobj(@SPA_CONTEXT,'current_request/data',@null)))
+        {
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/finicio',date_str(now(),"yyyy-MM-dd"))
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/ffinal',date_str(now(),"yyyy-MM-dd"))
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/cconsumo',dbr.str(SPA_MAIN_DB(),"select sys_pk from cconsumo order by descripcion limit 1;",@null))
+        }
+    }
+	#!
+    dbSelect_cconsumo::
+    {
+        new dcconsumo
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"select sys_pk, descripcion from cconsumo order by descripcion;"
+            @"value_field":"sys_pk"
+            @"text_field":"descripcion"
+            @"id":"cconsumo"
+            @"selected": field.dstr(@SPA_CONTEXT,'current_request/data/cconsumo','')
+            member @"attributes"
+            {
+                @"class":"form-control"
+            }
+        }
+
+        do uie.dbSelect(dcconsumo)
+    }
+
+    content_result_data::
+    {
+		@SPA_CONTEXT<"current_request/data/nfinicio">:NDATETIME.FROMSTR(field.str(@SPA_CONTEXT,'current_request/data/finicio'),"yyyy-MM-dd")
+		@SPA_CONTEXT<"current_request/data/nfinal">:NDATETIME.FROMSTR(field.str(@SPA_CONTEXT,'current_request/data/ffinal'),"yyyy-MM-dd")
+		
+		##
+		//p{$"#<to.json(@SPA_CONTEXT)>"}
+		##
+		
+        new defTable
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"SELECT qryRepCostoVentas.Codigo, qryRepCostoVentas.Descripcion, qryRepCostoVentas.Unidad, SUM(qryRepCostoVentas.Ventas) AS Ventas, (qryRepCostoVentas.Importe-qryRepCostoVentas.Devoluciones) AS Neto,SUM(qryRepCostoVentas.Importe) AS Importe, SUM(qryRepCostoVentas.Costo * Divisa.TCambio) AS Costo, SUM(qryRepCostoVentas.Devoluciones) AS Devoluciones, SUM(qryRepCostoVentas.ImpDev) AS ImpDev, SUM(qryRepCostoVentas.CtDev) AS CTDev 
+			FROM (qryRepCostoVentas INNER JOIN (Producto INNER JOIN Divisa ON Producto.IDivisa = Divisa.Sys_PK) ON qryrepcostoventas.PKProducto = Producto.Sys_PK) 
+			WHERE ND_Fecha >=@nfinicio AND ND_Fecha <=@nfinal AND ICConsumo=@cconsumo GROUP BY qryRepCostoVentas.Codigo, qryRepCostoVentas.Descripcion, qryRepCostoVentas.Unidad;"
+
+            @"parameters*":field.dobj(@SPA_CONTEXT,"current_request/data",@null)
+       
+
+            member @"attributes"
+            {
+                @"class":"table"
+            }
+			
+			member @"rows_attributes"
+            {
+                member @"begin_group"
+                {
+                    @"class":"alert-secondary"
+                }
+                member @"summary_group"
+                {
+                    @"class":"alert-secondary"
+                }
+            }
+            
+            //@"show_summary_group":@false
+            //@"show_summary":@false
+
+            member @"columns"
+            {
+                member @"Codigo"
+                {
+                    @"caption":"Código"
+                }
+                
+                member @"Descripcion"
+                {
+                    @"caption":"Descripción"
+                }
+				member @"Unidad"
+                {
+                    @"caption":"Unidad"
+                }
+				member @"Ventas"
+                {
+                    @"caption":"Ventas"
+                    @"format":"#,#.0"
+                    member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+				member @"Devoluciones"
+                {
+                    @"caption":"Devoluciones"
+                    @"format":"#,#.0"
+                    member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+				member @"Importe"
+                {
+                    @"caption":"Importe"
+                    @"format":"$ #,#.00"
+                    @"summary":"sum"
+                    member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+				member @"ImpDev"
+                {
+                    @"caption":"Importe de Devoluciones"
+                    @"format":"$ #,#.00"
+                    @"summary":"sum"
+                    member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+				member @"Neto"
+                {
+                    @"caption":"Neto"
+                    @"format":"$ #,#.00"
+                    @"summary":"sum"
+                    member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+				member @"Costo"
+                {
+                    @"caption":"Costo"
+                    @"format":"$ #,#.00"
+                    @"summary":"sum"
+                    member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+				
+            }
+        }
+
+        do uie.dbtable(defTable)
+        /*
+        ##
+        p{$"#<to.json(field.obj(defTable,'summaries'))>"}
+        ##
+        */
+        
+    }
+
+    do init_parameters()
+
+    content_module:: {   }
+
+    do render_page()
+}

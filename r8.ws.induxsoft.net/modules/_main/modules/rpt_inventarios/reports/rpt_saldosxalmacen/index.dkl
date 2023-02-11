@@ -1,0 +1,93 @@
+﻿#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+    #include "uielements.dkl"
+    #include "uielements.dbtable.dkl"
+
+    init_parameters::
+    {
+        if not(isnull(field.dobj(@SPA_CONTEXT,'current_request/data',@null)))
+        {
+            
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/almacen',dbr.str(SPA_MAIN_DB(),"select sys_pk from almacen order by descripcion limit 1;",@null))
+        }
+    }
+
+    #!
+    dbSelect_almacen::
+    {
+        new dalmacen
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"select sys_pk, descripcion from almacen order by descripcion;"
+            @"value_field":"sys_pk"
+            @"text_field":"descripcion"
+            @"id":"almacen"
+            @"selected": field.dstr(@SPA_CONTEXT,'current_request/data/almacen','')
+            member @"attributes"
+            {
+                @"class":"form-control"
+            }
+        }
+
+        do uie.dbSelect(dalmacen)
+    }
+
+    content_result_data::
+    {
+        new defTable
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"select l.Codigo,l.descripcion,sum(ex.saldo) as Saldo from existencias ex inner join producto p on ex.fk_producto_IExistencias=p.sys_pk inner join almacen a on ex.ialmacen=a.sys_pk inner join linea l on p.ILinea=l.sys_pk where ex.ialmacen=@almacen group by l.codigo;"
+
+            @"parameters*":field.dobj(@SPA_CONTEXT,"current_request/data",@null)
+            
+
+            member @"attributes"
+            {
+                @"class":"table"
+            }
+       member @"columns"
+       {
+           member @"codigo"
+           {
+               @"caption":"Código"
+           }
+           member @"descripcion"
+           {
+               @"caption":"Descripción"
+               @"summary":"Total:"
+           }
+           member @"saldo"
+           {
+               member @"attributes"
+               {
+                   @"align":"right"
+                   @"style":"color:#FF0000;text-align:right"
+               }
+
+               @"caption":"Saldo"
+               @"format":"$ #,#.00"
+               @"summary":"sum"
+               
+           }
+       }
+          
+        }
+
+        do uie.dbtable(defTable)
+        
+    }
+
+    do init_parameters()
+
+    content_module:: {   }
+
+    do render_page()
+}

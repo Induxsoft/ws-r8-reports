@@ -1,0 +1,33 @@
+﻿#include "dkli.dkh"
+
+#!
+module "cnn_selector.views"
+{
+    views.connection_button::app,cname,qname
+    {
+        on_click=ftext("selConnection('#<qname>');")
+
+        ##
+        button(class="btn btn-dark mb-2" style="width:180px;" onclick="#<on_click>"){$"#<cname>"}
+        ##
+    }
+
+    views.connection_group::app
+    {
+        ##
+        div(class="card col-sm-12 col-md-4")
+        {
+            div(class="card-header")
+            {
+                h3{$"#<app>"}
+            }
+            div(class="card-body")
+            {
+                ##
+                that    
+                ##
+            }
+        }
+        ##
+    }
+}

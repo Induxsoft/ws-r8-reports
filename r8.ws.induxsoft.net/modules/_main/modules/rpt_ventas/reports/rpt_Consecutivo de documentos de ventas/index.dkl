@@ -1,0 +1,181 @@
+#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+    #include "uielements.dkl"
+    #include "uielements.dbtable.dkl"
+
+    init_parameters::
+    {
+        if not(isnull(field.dobj(@SPA_CONTEXT,'current_request/data',@null)))
+        {
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/finicio',date_str(now(),"yyyy-MM-dd"))
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/ffinal',date_str(now(),"yyyy-MM-dd"))
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/cconsumo',dbr.str(SPA_MAIN_DB(),"select sys_pk from cconsumo order by descripcion limit 1;",@null))
+			do initReportParameter(@SPA_CONTEXT,'current_request/data/tipocl',dbr.str(SPA_MAIN_DB(),"select sys_pk from tipocliente order by descripcion limit 1;",@null))
+			do initReportParameter(@SPA_CONTEXT,'current_request/data/cdocu',dbr.str(SPA_MAIN_DB(),"select id,const from cdocumentos order by const  limit 1;",@null))
+        }
+    }
+
+    #!
+    dbSelect_cconsumo::
+    {
+        new dcconsumo
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"select sys_pk, descripcion from cconsumo order by descripcion;"
+            @"value_field":"sys_pk"
+            @"text_field":"descripcion"
+            @"id":"cconsumo"
+            @"selected": field.dstr(@SPA_CONTEXT,'current_request/data/cconsumo','')
+            member @"attributes"
+            {
+                @"class":"form-control"
+            }
+        }
+
+        do uie.dbSelect(dcconsumo)
+    }
+    dbSelect_cdocu::
+    {
+        new dcdocu
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"select id, const from cdocumentos where id>=1 and id<=6 order by const;"
+            @"value_field":"id"
+            @"text_field":"const"
+            @"id":"cdocu"
+            @"selected": field.dstr(@SPA_CONTEXT,'current_request/data/cdocu','')
+            member @"attributes"
+            {
+                @"class":"form-control"
+            }
+        }
+
+        do uie.dbSelect(dcdocu)
+    }
+ dbSelect_tipocl::
+    {
+        new dctipocl
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"select sys_pk, descripcion from tipocliente order by descripcion;"
+            @"value_field":"sys_pk"
+            @"text_field":"descripcion"
+            @"id":"tipocl"
+            @"selected": field.dstr(@SPA_CONTEXT,'current_request/data/tipocl','')
+            member @"attributes"
+            {
+                @"class":"form-control"
+            }
+        }
+
+        do uie.dbSelect(dctipocl)
+    }
+
+    content_result_data::
+    {
+        new defTable
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"select dv.descripcion moneda,v.Referencia,v.Fecha,c.Nombre as Cliente,v.Subtotal,(v.impuesto1+v.impuesto2+v.impuesto3+v.impuesto4) as Impuestos,(v.subtotal+v.impuesto1+v.impuesto2+v.impuesto3+v.impuesto4) as Total,cf.Const as FPago,cs.const as Status from venta v inner join cliente c on v.icliente=c.sys_pk inner join cformaspago cf on v.formapago=cf.id inner join cstatusadministrativos cs on v.statusadministrativo=cs.id inner join divisa dv on v.idivisa=dv.sys_pk where v.statusadministrativo<>99 and v.fecha>=@finicio and v.fecha<=@ffinal and v.icconsumo=@cconsumo and documento=@cdocu order by v.referencia,dv.Descripcion;"
+
+            @"parameters*":field.dobj(@SPA_CONTEXT,"current_request/data",@null)
+            @"group_by":"moneda"
+
+            member @"attributes"
+            {
+                @"class":"table"
+            }
+
+            member @"rows_attributes"
+            {
+                member @"begin_group"
+                {
+                    @"class":"alert-secondary"
+                }
+                member @"summary_group"
+              {
+                    @"class":"alert-secondary"
+                }
+            }
+            
+            //@"show_summary_group":@false
+            @"show_summary":@false
+
+            member @"columns"
+            {
+                 member @"Referencia"
+                {
+                 @"caption":"Código"
+                }
+                member @"Fecha"
+                {
+                @"caption":"Fecha"
+                }
+                member @"Cliente"
+                {
+                @"caption":"Cliente"
+                }
+                      
+                member @"subtotal"
+                {
+                    @"caption":"Subtotal"
+                    @"format":"$ #,#.00"
+                    @"summary":"sum"
+                    member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }    
+                member @"Impuestos"
+                {
+                    @"caption":"Impuestos"
+                    @"format":"$ #,#.00"
+                    @"summary":"sum"
+                    member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+                 member @"total"
+                {
+                    @"caption":"Total"
+                    @"format":"$ #,#.00"
+                    @"summary":"sum"
+                    member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+                member @"FPago"
+                {
+                @"caption":"Forma de Pago"
+               
+                }
+                member @"Status"
+                {
+                 @"caption":"Status"
+                 
+                }     
+            }    
+        }
+
+        do uie.dbtable(defTable)
+        
+    }
+
+    do init_parameters()
+
+    content_module:: {   }
+
+    do render_page()
+}

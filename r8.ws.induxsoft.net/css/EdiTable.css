@@ -1,0 +1,38 @@
+.EdiTable-Selector{
+    width: 100%;
+    height: 100%;
+    text-align: left;
+    background-color:transparent;
+    cursor: default!important;
+}
+.EdiTable-Input-Text{
+    width: 100%;
+    height: 100%;
+}
+.EdiTable-Input-Memo{
+    width: 100%;
+    height: 100%;
+}
+.EdiTable-Input-Date{
+    width: 100%;
+    height: 100%;
+}
+.EdiTable-Input-DateTime{
+    width: 100%;
+    height: 100%;
+}
+.EdiTable-Input-Check{
+    height: 100%;
+}
+.EdiTable-Input-Select{
+    width: 100%;
+}
+.EdiTable-Cell
+{
+    height: 1.25rem;
+}
+
+.EdiTable-Row-Selected
+{
+    background-color: aquamarine;
+}

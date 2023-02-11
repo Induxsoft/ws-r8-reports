@@ -1,0 +1,111 @@
+﻿#include "dkli.dkh"
+#!
+module "dbr.r8"
+{
+   table.tokeyvalue::&t,key,value
+   {
+       new rec{}
+       for i=0;i<table.rows(t)
+       {
+           rec<cell.strc(t,i,key)>:cell.strc(t,i,value)
+       }
+
+       return rec
+   }
+
+   list.totable::&list
+   {
+       if isnull(list) {return @null}
+       if list.count(list)<1 {return @null}
+       ref t=@null
+       for i=0;i<list.count(list)
+       {
+           ref rc=list.obj(list,i)
+           if isnull(t)
+           {
+               ref t=table.create(rc)
+           }
+           do row.add(t,rc)
+       }
+
+       return t
+       
+   }
+
+   dbr.detailInfoData::table, join
+   {
+       new detailInfoTable
+        {
+            @"keyfield":"sys_pk"
+            @"joinfield":join
+            @"table":table
+        }
+
+        return detailInfoTable
+   }
+    
+    dbr.buildDeleteDetailEntity::&info
+    {
+        return "delete from "+field.str(info,"table") + " where "+field.str(info,"keyfield")+"=@"+field.str(info,"keyfield")+";"
+    }
+
+    dbr.buildSelectDetailEntities::&info
+    {
+        return "select "+field.str(info,"keyfield") + " from "+field.str(info,"table") + " where "+field.str(info,"joinfield")+"=@"+field.str(info,"joinfield")+";"
+    }
+
+    dbr.ExistEntityInList::&data,keyfield, keyvalue
+    {
+        if isnull(data){ return @false}
+        for i=0;i<list.count(data)
+        {
+            ref rw=list.obj(data,i)
+
+            if field.dstr(rw,keyfield,"")==keyvalue { return @true }
+        }
+
+        return @false
+    }
+
+    dbr.updateDetails::&db,&info,masterkey, &data
+    {
+        new p {}
+
+        p<field.str(info,"joinfield")>:masterkey
+
+        ref current_data=dbr.table(db,dbr.buildSelectDetailEntities(info),p)
+
+        if table.rows(current_data)>0
+        {
+            for i=0;i<table.rows(current_data)
+            {
+                if not(dbr.ExistEntityInList(data,field.str(info,"keyfield"),cell.dstr(current_data, i, 0,"")))
+                {
+                    ref dr=row.get(current_data,i)
+                    do dbr.execute(db,dbr.buildDeleteDetailEntity(info),dr)
+                }
+            }
+        }
+
+        for i=0;i<list.count(data)
+        {
+            ref rw=list.obj(data,i)
+
+            if field.dstr(info,"fields","*")!="*"
+            {
+                ref rw=record.copy(rw,field.str(info,"fields"))
+            }
+
+            if not(field.exist(rw,field.str(info,"joinfield")))
+            {
+                rw<field.str(info,"joinfield")>:masterkey
+            }
+
+            rw<"sys_pk">:parse.num(field.dstr(rw,"sys_pk","0")) 
+            rw<"sys_recver">:parse.num(field.dstr(rw,"sys_recver","0"))
+            
+            do dbr.save(db,field.str(info,"table"),rw)
+        }
+    }
+
+}

@@ -1,0 +1,42 @@
+﻿#include "dkli.dkh"
+
+#$
+div(id="main_panel" style="margin-top:50px" )
+{
+	$"#<render('content')>"
+	header(class="navbar navbar-#<ifstr(@@(@http_context,'request/get/ws')=='','dark','light')> sticky-top bg-#<ifstr(@@(@http_context,'request/get/ws')=='','dark','light')> flex-md-nowrap p-0 shadow d-print-none")
+	{
+		button(class="navbar-toggler d-md-none collapsed" type="button" "data-bs-toggle"="collapse" "data-bs-target"="#sidebarMenu" "aria-controls"="sidebarMenu" "aria-expanded"="false" "aria-label"="Toggle navigation"){
+            span(class="navbar-toggler-icon"){""}
+        }
+        $"#<ifstr(@@(@http_context,'request/get/ws')=='',@header,'')>"
+	}
+        
+	div(class="container-fluid")
+	{
+		div(class="row tble-print")
+		{
+			nav(id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse d-print-none")
+			{
+				div(class="position-sticky pt-3")
+				{
+					$"#<render('create_sidebar')>"
+				}
+			}
+		
+			main(class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-cont")
+			{
+				div(id="workspace" class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3")
+				{
+					$""
+				}
+			}
+			script(type="text/javascript")
+			{
+				$'
+				finderModule="#<@finderModule>";
+				'
+			}
+		}
+	}
+}

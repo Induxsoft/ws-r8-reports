@@ -1,0 +1,146 @@
+﻿#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+    #include "uielements.dkl"
+    #include "uielements.dbtable.dkl"
+
+    init_parameters::
+    {
+        if not(isnull(field.dobj(@SPA_CONTEXT,'current_request/data',@null)))
+        {
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/finicio',date_str(now(),"yyyy-MM-dd"))
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/ffinal',date_str(now(),"yyyy-MM-dd"))
+        }
+    }
+
+    #!
+    content_result_data::
+    {
+		@SPA_CONTEXT<"current_request/data/nfinicio">:NDATETIME.FROMSTR(field.str(@SPA_CONTEXT,'current_request/data/finicio'),"yyyy-MM-dd")
+		@SPA_CONTEXT<"current_request/data/nfinal">:NDATETIME.FROMSTR(field.str(@SPA_CONTEXT,'current_request/data/ffinal'),"yyyy-MM-dd")
+		
+        new defTable
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"SELECT DVenta.IProducto,Producto.Codigo,Producto.Descripcion,DVenta.Unidad,SUM(DVenta.Cantidad) AS NoVentas,SUM(DVenta.Precio * DVenta.Cantidad) AS Subtotal, 
+			SUM(DVenta.Descuento1+DVenta.Descuento2) AS Descuento,SUM(DVenta.Impuesto1 +DVenta.Impuesto2+DVenta.Impuesto3+DVenta.Impuesto4) AS Impuesto, SUM(DVenta.Precio * DVenta.Cantidad)-SUM(DVenta.Descuento1+DVenta.Descuento2)+SUM(DVenta.Impuesto1 +DVenta.Impuesto2+DVenta.Impuesto3+DVenta.Impuesto4) AS Total,
+			(((YEAR(Venta.Fecha) * 10000) + (MONTH(Venta.Fecha) * 100)) + DAYOFMONTH(Venta.Fecha)) AS ND_Fecha FROM Venta INNER JOIN (DVenta INNER JOIN Producto ON DVenta.IProducto=Producto.Sys_PK)  
+			ON Venta.Sys_PK=DVenta.FK_Venta_Detalle WHERE (((YEAR(Venta.Fecha) * 10000) + (MONTH(Venta.Fecha) * 100)) + DAYOFMONTH(Venta.Fecha))>=@nfinicio AND 
+			(((YEAR(Venta.Fecha) * 10000) + (MONTH(Venta.Fecha) * 100)) + DAYOFMONTH(Venta.Fecha))<=@nfinal AND DVenta.Status>0 GROUP BY DVenta.IProducto;"
+
+            @"parameters*":field.dobj(@SPA_CONTEXT,"current_request/data",@null)
+            
+
+            member @"attributes"
+            {
+                @"class":"table"
+            }
+
+            member @"rows_attributes"
+            {
+                member @"begin_group"
+                {
+                    @"class":"alert-secondary"
+                }
+                member @"summary_group"
+                {
+                    @"class":"alert-secondary"
+                }
+            }
+            
+            //@"show_summary_group":@false
+            @"show_summary":@false
+
+            member @"columns"
+            {
+                member @"Codigo"
+                {
+                    @"caption":"Código"
+                }                
+                member @"Descripcion"
+                {
+                    @"caption":"Descripción"
+                }            
+			    member @"Unidad"
+                {
+                    @"caption":"Unidad"
+                }
+				member @"NoVentas"
+                {
+                    @"caption":"Ventas"
+					@"format":"#,#.0"
+					@"summary":"sum"
+					member @"attributes"
+						{
+							@"align":"right"
+                            @"style":"text-align:right"
+						}
+                }
+				member @"Subtotal"
+                {
+                    @"caption":"Subtotal"
+					@"format":"$ #,#.00"
+					 @"summary":"sum"
+					 member @"attributes"
+						{
+							@"align":"right"
+                            @"style":"text-align:right"
+						}
+                }
+				member @"Descuento"
+                {
+                    @"caption":"Descuento"
+					@"format":"$ #,#.00"
+					 @"summary":"sum"
+					 member @"attributes"
+						{
+							@"align":"right"
+                            @"style":"text-align:right"
+						}
+                }
+				member @"Impuesto"
+                {
+                    @"caption":"Impuesto"
+					@"format":"$ #,#.00"
+					 @"summary":"sum"
+					 member @"attributes"
+						{
+							@"align":"right"
+                            @"style":"text-align:right"
+						}
+                }				
+				member @"Total"
+                {
+                    @"caption":"Total"
+					@"format":"$ #,#.00"
+					@"summary":"sum"
+					 member @"attributes"
+						{
+							@"align":"right"
+                            @"style":"text-align:right"
+						}
+                }
+            }
+        }
+
+        do uie.dbtable(defTable)
+        /*
+        ##
+        p{$"#<to.json(field.obj(defTable,'summaries'))>"}
+        ##
+        */
+        
+    }
+
+    do init_parameters()
+
+    content_module:: {   }
+
+    do render_page()
+}

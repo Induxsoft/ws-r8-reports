@@ -1,0 +1,57 @@
+﻿#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+
+    #include "views.dk"
+
+    if not(@can_select_connection)
+    {
+        do rise_error(-99,"No se permite la selección de conexión")
+    }
+
+    content_module::
+    {
+        if trim(@connections_filter)=="" || trim(@connections_filter)=="*"
+        {
+            ref applications=dba.apps(@connections_repository)
+        }
+        else
+        {
+            ref applications=from.json(@connections_filter)
+        }
+       
+
+        for i=0;i<list.count(applications)
+        {
+            app=list.str(applications,i)
+
+            if trim(app)!=""
+            {
+                go views.connection_group with (app)
+                {
+                    ref cnns=dba.cnns(path.concat(@connections_repository,app))
+                    for j=0;j<list.count(cnns)
+                    {
+                        qname=path.concat(@connections_repository,list.str(cnns,j)+'@'+app)
+                        do views.connection_button(app,list.str(cnns,j),qname)
+                    }
+                }
+            }
+            exception{}
+        }
+
+    }
+
+    do render_page()
+
+    exception
+    {
+        include setModulePath(SET_ERROR_MESSAGE("No está permitida la selección de conexión en esta aplicación."))
+    }
+}

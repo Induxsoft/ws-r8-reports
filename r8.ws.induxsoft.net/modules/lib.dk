@@ -1,0 +1,44 @@
+﻿#include "dkli.dkh"
+#!
+module "main_module_lib"
+{
+    modules_groups::path, id_prefix
+    {
+        new groups{}
+
+        if trim(id_prefix)!=""
+        {
+            id_prefix=path.concat(id_prefix,"/")
+        }
+
+        ref m=list.dirs(path)
+
+        for i=0;i<list.count(m)
+        {
+            if not(contains(@RESERVED_MODULES, tolower(file.name(list.str(m,i)))))
+            {
+                if file.exists(path.concat(list.str(m,i),@MODULE_META))
+                {
+                    ref dm=from.json(file.rtext(path.concat(list.str(m,i),@MODULE_META)))
+                    dm<"id">:id_prefix+file.name(list.str(m,i))
+                }
+                else
+                {
+                    ref dm=from.json('{"id":"'+id_prefix+file.name(list.str(m,i))+'","title":"'+file.name(list.str(m,i))+'"}')
+                }
+
+                if not(field.exist(groups,field.dstr(dm,"group","")))
+                {
+                    groups<field.dstr(dm,"group","")+"*">:list.create()
+                }
+
+                do list.add(field.obj(groups,field.dstr(dm,"group","")),dm)
+            }
+            
+        }
+
+        return groups
+    }
+
+    
+}

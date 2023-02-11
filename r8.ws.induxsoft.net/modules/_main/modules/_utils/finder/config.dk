@@ -1,0 +1,44 @@
+﻿#include "dkli.dkh"
+#!
+module "config.finder"
+{
+    finderItems::&finderTableDef
+    {
+        switch field.dstr(@SPA_CONTEXT,'current_request/data/_itemType','')
+        {
+            /*  Ejemplo (Reemplace con su propio código)
+            *   Invocar a una función por cada tipo de entidad que debe buscarse
+            *   Vea la función: findCliente y úsela para crear las propias
+            case "cliente"
+            {
+                do findCliente(finderTableDef)
+            }
+            */
+        }
+    }
+
+    /*  Esta función configura la tabla a partir de la cual se elige un elemento
+        con base en el resultado de una consulta SQL
+    findCliente::&finderTableDef
+    {
+        using finderTableDef
+        {
+            @"source":"select sys_pk, codigo, nombre from cliente where nombre like concat('%',@text,'%') or codigo like concat('%',@text,'%') order by nombre limit 100;"
+            member @"columns"
+            {
+                member @"codigo"
+                {
+                    @"caption":"Código"
+                }
+                member @"nombre"
+                {
+                    @"caption":"Nombre"
+                }
+            }
+        }
+
+    }
+    */
+
+    
+}

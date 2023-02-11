@@ -1,0 +1,31 @@
+﻿#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+
+    content_module::
+    {
+        @SPA_CONTEXT<"current_request/error_info*">:@ERROR_INFO
+        ##
+        h3{$"Ups, algo no anda bien."}
+        p{small{$"#<field.str(@ERROR_INFO,'message')>"}}
+        ##
+        if parse.bool(field.dstr(@ERROR_INFO,"retry","1"))
+        {
+            ##
+            button(type="button" class="btn btn-secondary" onclick="refreshElement();"){$"Reintentar"}
+            ##
+        }
+        ##
+        noscript(id="error_info"){$"#<to.json(@ERROR_INFO)>"}
+        ##
+    }
+
+    do render_page()
+}

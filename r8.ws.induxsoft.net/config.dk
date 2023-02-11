@@ -1,0 +1,101 @@
+#include "dkli.dkh"
+#!
+module "config.dk"
+{
+    @PAGE_TITLE="Induxsoft R8 Cloud"
+
+    @BASE_PATH="/usr/dkl_apps/web/r8.ws.induxsoft.net" //DEBE MODIFICAR ESTE VALOR*************
+    @MODULES_PATH=path.concat(@BASE_PATH,"modules")
+    @LIBRARIES_PATH=path.concat(@BASE_PATH,"lib")
+
+    @BASE_URL="/"    //URL de base (Generalmente no deberá modificarla)
+
+    @MODULES_FOLDER="modules"
+    @INDEX_PAGE="index.dkl"
+    @MODULE_SCRIPT="script.js"
+    @MODULE_CSS="styles.css"
+    @MODULE_META="meta.json"
+
+    @START_MODULE="_start"
+    @CONNECT_MODULE="_connect"
+    @LOGIN_MODULE="_login"
+    @MAIN_MODULE="_main"
+    @ERROR_MODULE="_error"
+
+    @UTILS_MODULE="_utils"
+
+    @RESERVED_MODULES=@START_MODULE+","+@CONNECT_MODULE+","+@LOGIN_MODULE+","+@MAIN_MODULE+","+@ERROR_MODULE+","+@UTILS_MODULE
+    @COOKIE_NAME="spa_context"
+
+    @HTTP_REQUEST_PATH_SPA_CONTEXT="request/post_string"
+
+    @HTTP_REQUEST_PATH_CONNECTION_QNAME="request/get/qn"
+    @HTTP_REQUEST_PATH_SESSION_ID="request/get/ids"
+    @HTTP_REQUEST_PATH_USER_ID="request/get/uid"
+    @HTTP_REQUEST_PATH_USER_NAME="request/get/un"
+
+    @KEY_CONNECTION_QNAME="CONNECTION_QNAME"
+    @KEY_SESSION_ID="SESSION_ID"
+    @KEY_USER_ID="USER_ID"
+    @KEY_USER_NAME="USER_NAME"
+    @KEY_USER_VERIFIED_EMAIL="USER_VERIFIED_EMAIL"
+    @KEY_USER_VERIFIED_MOBILE="USER_VERIFIED_MOBILE"
+
+    @KEYWORD_LOGOUT="logout"
+
+    @MAIN_SCRIPT=path.concat(@BASE_URL,"js/r8.js")
+
+    url_module::name
+    {
+        return path.concat(path.concat(@BASE_URL,path.concat(@MODULES_FOLDER,name)),"/")
+    }
+
+    new @SPA_CONTEXT 
+    {
+        @"START_MODULE":url_module(@START_MODULE)
+    }
+
+    new @MODULE_INFO{}
+
+    new @ERROR_INFO
+    {
+        @"message":""
+    }
+    
+    SET_ERROR_MESSAGE::msg
+    {
+        @ERROR_INFO<"error_code">:last_error_code()
+        @ERROR_INFO<"error_message">:last_error()
+        @ERROR_INFO<"message">:msg
+        return @ERROR_MODULE
+    }
+
+    @CSS_DELIVER_ONLY1TIME=@false   //@true - Cargar estilos únicamente la primera vez que se carga el módulo en la página
+    @JS_DELIVER_ONLY1TIME=@true     //@true - Cargar script (js) únicamente la primera vez que se carga el módulo en la página
+    
+    @can_select_connection=field.dstr(@SPA_CONTEXT,@KEY_CONNECTION_QNAME,"")==""
+    //Establezca @can_select_connection=@true para permitir siempre la selección de conexión
+    
+    @connections_repository=""      //Conexión a un repositorio de conexiones en una base de datos
+    @connections_filter='*'    //Cadena de filtro de aplicaciones '["R5","MaxiComercio.R5","Deminus.R5"]'
+
+    @UseHashUnicode=@true          //Si es @true, se usará la comparación de Hash MD5 Unicode de R5
+
+    @crudl.access_privilege='
+    {
+        "access":[{"workspace":"'+@@(@http_context,"request/get/ws")+'"}]
+    }'
+    @qname_ws="Connections@induxsoft/ws"+@@(@http_context,"request/get/ws")+"@workspaces"
+
+    @redirec_origin="https://ws.induxsoft.net/"+@@(@http_context,"request/get/ws")+"/?token="+@@(@http_context,"$session/user/ids")
+    @URL_WORKSPACE="https://ws.induxsoft.net/"+@@(@http_context,"request/get/ws")+"/?url="+url_encode("http://r8.ws.induxsoft.net/"+@@(@http_context,"request/get/ws")+"/?token=@token")
+    @LOGOUT_WORKSCAPACE="https://api.induxsoft.net/auth/logout/?ids="+@@(@http_context,"session/user/ids")+"&url="+@URL_WORKSPACE
+    @QNAME_PERFILES=""//Connections@induxsoft/epifania_pefiles@induxsoft
+    ref @JSON_POSTDATA=from.json(field.dstr(@http_context,@HTTP_REQUEST_PATH_SPA_CONTEXT,"{}"))
+
+    if @@(@http_context,"request/get/ws")!="" && @@(@http_context,"session/user/ids")==""{
+        @SPA_CONTEXT<@KEY_SESSION_ID>:""
+        @http_context<"response/headers/Location">:@URL_WORKSPACE
+        return
+    }
+}

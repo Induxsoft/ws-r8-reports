@@ -1,0 +1,39 @@
+﻿#include "dkli.dkh"
+#!
+module "views.login"
+{
+    views.login_form::
+    {
+        ##
+        
+        main (class="form-signin")
+        {
+            h5{$"Inicio de sesión"}
+            span{$"#<field.str(@SPA_CONTEXT,'CONNECTION_QNAME')>"}
+            ##
+            if @can_select_connection
+            {
+                ##
+                button(type="link" class="btn btn-light" onclick="change_connection();"){$"Cambiar"}
+                ##
+            }
+            ##
+            
+            hr{}
+            form
+            {$'
+                <div class="form-floating">
+                <input type="text" class="form-control" id="userId" placeholder="Id de usuario">
+                <label for="userId">Usuario</label>
+                </div>
+                <div class="form-floating">
+                <input type="password" class="form-control" id="password" placeholder="Password">
+                <label for="password">Contraseña</label>
+                </div>
+            '}
+            
+            button (class="w-100 btn btn-lg btn-primary" onclick="login();"){$"Entrar"}
+        }
+        ##
+    }
+}

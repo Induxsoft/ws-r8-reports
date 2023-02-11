@@ -1,0 +1,175 @@
+﻿#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+    #include "uielements.dkl"
+    #include "uielements.dbtable.dkl"
+
+	init_parameters::
+    {
+        if not(isnull(field.dobj(@SPA_CONTEXT,'current_request/data',@null)))
+        {
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/tipocliente',dbr.str(SPA_MAIN_DB(),"select sys_pk from tipocliente order by descripcion limit 1;",@null))
+        }
+    }
+    
+/*
+    #!
+      
+		##
+		p{$"#<to.json(@SPA_CONTEXT)>"}
+		##
+*/
+// ##
+// 		p{$"#<to.json(@SPA_CONTEXT)>"}
+// 		##
+	dbSelect_tcliente::
+    {
+        new dctipocl
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"select sys_pk, descripcion from tipocliente order by descripcion;"
+            @"value_field":"sys_pk"
+            @"text_field":"descripcion"
+            @"id":"tipocl"
+            @"selected": field.dstr(@SPA_CONTEXT,'current_request/data/tipocl','')
+            member @"attributes"
+            {
+                @"class":"form-control"
+            }
+        }
+
+        do uie.dbSelect(dctipocl)
+    }
+	  content_result_data::
+    {
+		
+        new defTable
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"SELECT Z.CodCuenta, Z.Codigo, Z.CURP, Z.Descuento, Z.DiasCredito, Z.eMail, Z.Fax, Z.LimiteCredito, Z.Monedero, Z.Nombre, Z.Puntos, Z.RFC, Z.Saldo, Z.SaldoPuntos, cStatusOrg.Const AS STATUS, 
+			Z.Telefonos, Z.WebSite, Agente.Nombre AS Agente, Contacto.Nombre AS Contacto1, Domicilio.Direccion AS Domicilio1, Divisa.Descripcion AS Divisa
+			FROM (Divisa INNER JOIN (Domicilio RIGHT JOIN (Contacto RIGHT JOIN (Agente RIGHT JOIN cliente AS Z ON Agente.Sys_PK = Z.Agente) ON (Contacto.Sys_PK = Z.Contacto3) 
+			AND (Contacto.Sys_PK = Z.Contacto2) AND (Contacto.Sys_PK = Z.Contacto1)) ON (Domicilio.Sys_PK = Z.Domicilio3) AND (Domicilio.Sys_PK = Z.Domicilio2) AND (Domicilio.Sys_PK = Z.Domicilio1)) 
+			ON Divisa.Sys_PK = Z.IDivisa) INNER JOIN cStatusOrg ON Z.Status = cStatusOrg.ID where z.Tipo=@tipocl;"
+
+            @"parameters*":field.dobj(@SPA_CONTEXT,"current_request/data",@null)
+			
+			
+			member @"attributes"
+            {
+                @"class":"table"
+            }
+			
+            member @"columns"
+            {
+                member @"Codigo"
+                {
+                    @"caption":"Código"
+                }
+				member @"CodCuenta"
+                {
+                    @"caption":"Código de Cuenta"
+                }
+				member @"Nombre"
+                {
+                    @"caption":"Nombre"
+                }
+				member @"Domicilio1"
+                {
+                    @"caption":"Dirección"
+                }
+                member @"RFC"
+                {
+                    @"caption":"RFC"
+                }
+				member @"CURP"
+                {
+                    @"caption":"CURP"
+                }
+				member @"Telefonos"
+                {
+                    @"caption":"Teléfono"
+                }
+/*				member @"Fax"
+                {
+                    @"caption":"Fax"
+                }
+*/				member @"eMail"
+                {
+                    @"caption":"Correo Electrónico"
+                }
+/*				member @"website"
+                {
+                    @"caption":"Sitio Web"
+                }
+*/				member @"Saldo"
+                {
+                    @"caption":"Saldo"
+					@"format":"$ #,#.00"
+                }
+				member @"SaldoPuntos"
+                {
+                    @"caption":"Saldo en Puntos"
+					@"format":"$ #,#.00"
+                }
+				member @"LimiteCredito"
+                {
+                    @"caption":"Límite de Crédito"
+					@"format":" #,#.00"
+                }
+				member @"DiasCredito"
+                {
+                    @"caption":"Días de Crédito"
+					@"format":" #,#"
+                }
+/*				member @"Descuento"
+                {
+                    @"caption":"Desceunto"
+					@"format":" #,#.00"
+                }
+*/				member @"Monedero"
+                {
+                    @"caption":"Monedero"
+					@"format":" #,#.00"
+                }
+				member @"Puntos"
+                {
+                    @"caption":"Puntos"
+					@"format":" #,#"
+                }
+				member @"Status"
+                {
+                    @"caption":"Estado del Cliente"
+                }
+				member @"Divisa"
+                {
+                    @"caption":"Divisa"
+                }
+/*				member @"Agente"
+                {
+                    @"caption":"Agente"
+                }
+				member @"Contacto"
+                {
+                    @"caption":"Contacto"
+                }
+*/			
+            }
+        }
+
+        do uie.dbtable(defTable)
+        
+    }
+
+    
+
+    content_module:: {   }
+
+    do render_page()
+}

@@ -1,0 +1,120 @@
+﻿#include "dkli.dkh"
+#!
+module "index.dkl"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    #include "website.dkl"
+    #include "uielements.dkl"
+    #include "uielements.dbtable.dkl"
+
+    init_parameters::
+    {
+        if not(isnull(field.dobj(@SPA_CONTEXT,'current_request/data',@null)))
+        {
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/finicio',date_str(now(),"yyyy-MM-dd"))
+            do initReportParameter(@SPA_CONTEXT,'current_request/data/ffinal',date_str(now(),"yyyy-MM-dd"))
+        }
+    }
+
+    #!
+      content_result_data::
+    {
+		@SPA_CONTEXT<"current_request/data/nfinicio">:NDATETIME.FROMSTR(field.str(@SPA_CONTEXT,'current_request/data/finicio'),"yyyy-MM-dd")
+		@SPA_CONTEXT<"current_request/data/nfinal">:NDATETIME.FROMSTR(field.str(@SPA_CONTEXT,'current_request/data/ffinal'),"yyyy-MM-dd")
+	/*	
+		##
+		p{$"#<to.json(@SPA_CONTEXT)>"}
+		##
+		*/
+		
+        new defTable
+        {
+            @"db*":SPA_MAIN_DB()
+            @"source":"SELECT Z.Codigo, Z.Descripcion, Z.Unidad, Z.Compras AS CompraBruta, Z.Devoluciones, (Z.ImporteC) AS CompraSubtotal, (Z.ImpuestosC) AS CompraImpuestos, (Z.ImporteC+Z.ImpuestosC) AS CompraTotal,
+			(Z.DevImporte) AS DevSubtotal,(Z.DevImpuestos) AS DevImpuestos,(Z.DevImporte+Z.DevImpuestos) AS DevTotal FROM  (qryRepComprasNetas AS Z INNER JOIN Producto ON Z.PKProducto = Producto.Sys_PK) 
+			INNER JOIN Proveedor ON Z.IProveedor = Proveedor.Sys_PK WHERE Z.ND_Fecha>=@nfinicio AND Z.ND_Fecha<=@nfinal;"
+
+            @"parameters*":field.dobj(@SPA_CONTEXT,"current_request/data",@null)
+ 
+			member @"attributes"
+            {
+                @"class":"table"
+            }
+			
+            member @"columns"
+            {
+                member @"Codigo"
+                {
+                    @"caption":"Código"
+                }
+				member @"Descripcion"
+                {
+                    @"caption":"Descripción"
+                }
+				
+				member @"Unidad"
+                {
+                    @"caption":"Unidad"
+					@"summary":"Totales: " //Esta leyenda solo aparece en el resumen general
+                }
+				member @"CompraBruta"
+                {
+                    @"caption":"Compras"
+                    @"format":" #,#.00"
+                    @"summary":"sum" //Esta leyenda solo aparece en el resumen general
+					member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+                
+                member @"CompraSubtotal"
+                {
+                    @"caption":"SubTotal"
+                    @"format":"$ #,#.00"
+                    @"summary":"sum"
+                    member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+				member @"CompraImpuestos"
+                {
+                    @"caption":"Impuestos"
+                    @"format":"$ #,#.00"
+                    @"summary":"sum"
+                    member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+				member @"CompraTotal"
+                {
+                    @"caption":"Total"
+                    @"format":"$ #,#.00"
+                    @"summary":"sum"
+                    member @"attributes"
+                    {
+                        @"align":"right"
+                        @"style":"text-align:right"
+                    }
+                }
+            }
+        }
+
+        do uie.dbtable(defTable)
+        
+    }
+
+    do init_parameters()
+
+    content_module:: {   }
+
+    do render_page()
+}
